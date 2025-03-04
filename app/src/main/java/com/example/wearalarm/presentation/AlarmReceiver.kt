@@ -10,7 +10,7 @@ import android.os.Vibrator
 
 class AlarmReceiver : BroadcastReceiver() {
     companion object {
-        var ringtone: Ringtone? = null // Remove 'private' keyword
+        var ringtone: Ringtone? = null
     }
 
     override fun onReceive(context: Context, intent: Intent?) {
@@ -19,6 +19,11 @@ class AlarmReceiver : BroadcastReceiver() {
 
         val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
         ringtone = RingtoneManager.getRingtone(context, alarmUri)
-        ringtone?.play()
+
+        ringtone?.let {
+            if (!it.isPlaying) {
+                it.play()
+            }
+        }
     }
 }

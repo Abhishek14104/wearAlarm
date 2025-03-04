@@ -1,68 +1,217 @@
-package com.example.wearalarm.presentation
+package com.example.wearalarm
 
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.wear.compose.material.Button
-import androidx.wear.compose.material.Text
+import androidx.wear.compose.material.*
+import com.example.wearalarm.presentation.AlarmReceiver
+import java.util.Calendar
+import androidx.compose.ui.platform.LocalContext
+import android.provider.Settings
+import android.net.Uri
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            WearAlarm()
+            WearAlarmApp()
         }
     }
+}
 
-    private fun setAlarm(context: Context) {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, AlarmReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(
-            context, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
+@Composable
+fun WearAlarmApp() {
+    val context = LocalContext.current // ✅ Get the Context
 
-        val triggerTime = System.currentTimeMillis() + 5000  // 5 seconds from now
+    var showTimePicker by remember { mutableStateOf(false) }
+    var selectedTime by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    var isAlarmSet by remember { mutableStateOf(false) }
 
-        try {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
-            Toast.makeText(context, "Alarm set!", Toast.LENGTH_SHORT).show()
-        } catch (e: SecurityException) {
-            Toast.makeText(context, "Exact alarm permission is required!", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun stopAlarm() {
-        AlarmReceiver.ringtone?.stop()
-        Toast.makeText(this, "Alarm Dismissed!", Toast.LENGTH_SHORT).show()
-    }
-
-    @Composable
-    fun WearAlarm() {
-        val context = LocalContext.current
-
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Button(onClick = { setAlarm(context) }) {
-                Text("Set Alarm")
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        if (showTimePicker) {
+            TimePickerScreen { hour, minute ->
+                selectedTime = hour to minute
+                showTimePicker = false
+                isAlarmSet = true
+                setAlarm(context, hour, minute) // ✅ Pass context
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(onClick = { stopAlarm() }) {
-                Text("Dismiss Alarm")
+        } else {
+            if (isAlarmSet) {
+                Button(
+                    onClick = {
+                        cancelAlarm(context)
+                        isAlarmSet = false
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .width(85.dp)
+                        .height(25.dp)
+                ) {
+                    Text(
+                        text = "Dismiss Alarm",
+                        fontSize = 10.sp,
+                        style = TextStyle(lineHeight = 14.sp)
+                    )
+                }
+
+
+            } else {
+                Button(onClick = { showTimePicker = true },
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .width(50.dp)
+                        .height(25.dp)) {
+                    Text(
+                        text = "Set Alarm",
+                        fontSize = 10.sp,
+                        style = TextStyle(lineHeight = 14.sp)
+                    )
+                }
+            }
+
+            selectedTime?.let { (hour, minute) ->
+                Text("Selected Time: %02d:%02d".format(hour, minute), color = Color.Black)
             }
         }
     }
 }
+
+
+@Composable
+fun TimePickerScreen(onTimeSelected: (Int, Int) -> Unit) {
+    val hours = (0..23).map { it.toString().padStart(2, '0') }
+    val minutes = (0..59).map { it.toString().padStart(2, '0') }
+
+    val hourState = rememberPickerState(hours.size, initiallySelectedOption = 12) // ✅ Fixed
+    val minuteState = rememberPickerState(minutes.size, initiallySelectedOption = 0)
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+//        Text("Select Time", style = MaterialTheme.typography.title3)
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Picker(
+                state = hourState,
+                modifier = Modifier.size(70.dp, 70.dp),
+                contentDescription = "Hour Picker"
+
+            ) { index ->
+                Text(hours[index], style = MaterialTheme.typography.display1, color = Color.Red)
+            }
+
+            Spacer(modifier = Modifier.width(2.dp))
+
+            Picker(
+                state = minuteState,
+                modifier = Modifier.size(70.dp, 70.dp),
+                contentDescription = "Minute Picker"
+            ) { index ->
+                Text(minutes[index], style = MaterialTheme.typography.display1, color = Color.Red)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(onClick = {
+            val selectedHour = hourState.selectedOption
+            val selectedMinute = minuteState.selectedOption
+            onTimeSelected(selectedHour, selectedMinute)
+        },  shape = RoundedCornerShape(8.dp),
+            modifier = Modifier
+                .width(80.dp)
+                .height(25.dp)) {
+            Text(
+                text = "Confirm Alarm",
+                fontSize = 10.sp,
+                style = TextStyle(lineHeight = 14.sp)
+            )
+        }
+    }
+}
+
+
+private fun setAlarm(context: Context, hour: Int, minute: Int) {
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+    // ✅ Only check for exact alarm permission on API 31+ (Android 12+)
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+        if (!alarmManager.canScheduleExactAlarms()) {
+            requestExactAlarmPermission(context)
+            return
+        }
+    }
+
+    val intent = Intent(context, AlarmReceiver::class.java)
+    val pendingIntent = PendingIntent.getBroadcast(
+        context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+
+    val calendar = Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, hour)
+        set(Calendar.MINUTE, minute)
+        set(Calendar.SECOND, 0)
+
+        if (timeInMillis <= System.currentTimeMillis()) {
+            add(Calendar.DAY_OF_YEAR, 1)
+        }
+    }
+
+    alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+}
+
+
+fun requestExactAlarmPermission(context: Context) {
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+        val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+            data = Uri.parse("package:${context.packageName}")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        context.startActivity(intent)
+    }
+}
+
+
+private fun cancelAlarm(context: Context) {
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    val intent = Intent(context, AlarmReceiver::class.java)
+    val pendingIntent = PendingIntent.getBroadcast(
+        context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+
+    // ✅ Cancel the alarm
+    alarmManager.cancel(pendingIntent)
+
+    // ✅ Stop the ringtone if it's playing
+    AlarmReceiver.ringtone?.let {
+        if (it.isPlaying) {
+            it.stop()
+        }
+    }
+}
+
+

@@ -14,7 +14,6 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-
     }
 
     buildTypes {
@@ -39,17 +38,23 @@ android {
 }
 
 dependencies {
-    implementation("androidx.wear.compose:compose-material:1.4.1")
+    implementation(libs.compose.material)
+    implementation(libs.compose.foundation)
+
+
+    implementation("androidx.compose.ui:ui:1.6.0")
+    implementation("androidx.compose.runtime:runtime:1.6.0")
+
     implementation(libs.play.services.wearable)
     implementation(platform(libs.compose.bom))
     implementation(libs.ui)
     implementation(libs.ui.graphics)
     implementation(libs.ui.tooling.preview)
-    implementation(libs.compose.material)
-    implementation(libs.compose.foundation)
     implementation(libs.wear.tooling.preview)
     implementation(libs.activity.compose)
     implementation(libs.core.splashscreen)
+    implementation(libs.material3.android)
+
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
