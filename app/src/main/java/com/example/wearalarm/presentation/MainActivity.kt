@@ -23,6 +23,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
 import com.example.wearalarm.ui.theme.WearAlarmTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,13 +44,12 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
 @Composable
 fun WearAlarmApp() {
     val context = LocalContext.current
 
     var showTimePicker by remember { mutableStateOf(false) }
-    var selectedTime by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    var selectedTime by remember { mutableStateOf<Triple<Int, Int, String>?>(null) }
     var isAlarmSet by remember { mutableStateOf(false) }
 
     Column(
@@ -50,136 +58,180 @@ fun WearAlarmApp() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (showTimePicker) {
-            TimePickerScreen { hour, minute ->
-                selectedTime = hour to minute
+            TimePickerScreen { hour, minute, amPm ->
+                selectedTime = Triple(hour, minute, amPm)
                 showTimePicker = false
                 isAlarmSet = true
-                setAlarm(context, hour, minute)
+                setAlarm(context, hour, minute, amPm)
             }
         } else {
-            if (isAlarmSet) {
-                Button(
-                    onClick = {
-                        cancelAlarm(context)
-                        isAlarmSet = false
-                    },
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = Color.DarkGray,
-                        contentColor = Color.White
-                    ),
-                    modifier = Modifier
-                        .width(85.dp)
-                        .height(30.dp)
-                ) {
-                    Text(
-                        text = "Dismiss Alarm",
-                        fontSize = 12.sp,
-                        style = TextStyle(lineHeight = 14.sp),
-                        color = Color.White
-                    )
-                }
-            } else {
-                Button(
-                    onClick = { showTimePicker = true },
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = Color.DarkGray,
-                        contentColor = Color.White
-                    ),
-                    modifier = Modifier
-                        .width(80.dp)
-                        .height(30.dp)
-                ) {
-                    Text(
-                        text = "Set Alarm",
-                        fontSize = 12.sp,
-                        style = TextStyle(lineHeight = 14.sp),
-                        color = Color.White
-                    )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                if (isAlarmSet) {
+                    Button(
+                        onClick = {
+                            cancelAlarm(context)
+                            isAlarmSet = false
+                            selectedTime = null
+                        },
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = Color.White,
+                            contentColor = Color.Black
+                        ),
+                        modifier = Modifier.size(40.dp) // Circular button
+                    ) {
+                        Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Default.Close,
+                            contentDescription = "Dismiss Alarm",
+                            tint = Color.Black
+                        )
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        verticalArrangement = Arrangement.Center, // ✅ Center vertically
+                        horizontalAlignment = Alignment.CenterHorizontally // ✅ Center horizontally
+                    ) {
+                        Text(
+                            text = "Set New Alarm",
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            textAlign = TextAlign.Center, // ✅ Center text
+                            modifier = Modifier.padding(bottom = 28.dp),
+                            fontWeight =  FontWeight.ExtraBold
+                        )
+
+                        Button(
+                            onClick = { showTimePicker = true },
+                            shape = RoundedCornerShape(50),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = Color.White,
+                                contentColor = Color.Black
+                            ),
+                            modifier = Modifier.size(40.dp) // ✅ Circular button
+                        ) {
+                            Icon(
+                                imageVector = androidx.compose.material.icons.Icons.Default.Add,
+                                contentDescription = "Set Alarm",
+                                tint = Color.Black,
+                            )
+                        }
+                    }
+
                 }
             }
 
-            selectedTime?.let { (hour, minute) ->
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (isAlarmSet && selectedTime != null) {
+                val (hour, minute, amPm) = selectedTime!!
                 Text(
-                    "Selected Time: %02d:%02d".format(hour, minute),
-                    color = Color.White
+                    text = "Selected Time: %02d:%02d %s".format(hour, minute, amPm),
+                    color = Color.White,
+                    fontSize = 12.sp
                 )
             }
         }
     }
 }
 
-
-
 @Composable
-fun TimePickerScreen(onTimeSelected: (Int, Int) -> Unit) {
-    val hours = (0..23).map { it.toString().padStart(2, '0') }
+fun TimePickerScreen(onTimeSelected: (Int, Int, String) -> Unit) {
+    val hours = (1..12).map { it.toString().padStart(2, '0') }
     val minutes = (0..59).map { it.toString().padStart(2, '0') }
+    val amPm = listOf("AM", "PM")
 
-    val hourState = rememberPickerState(hours.size, initiallySelectedOption = 12)
-    val minuteState = rememberPickerState(minutes.size, initiallySelectedOption = 0)
+    val calendar = Calendar.getInstance()
+    val currentHour24 = calendar.get(Calendar.HOUR_OF_DAY)
+    val currentMinute = calendar.get(Calendar.MINUTE)
+
+    val currentAmPmIndex = if (currentHour24 >= 12) 1 else 0
+    val currentHour12 = if (currentHour24 % 12 == 0) 12 else currentHour24 % 12
+
+    val hourState = rememberPickerState(hours.size, initiallySelectedOption = currentHour12 - 1)
+    val minuteState = rememberPickerState(minutes.size, initiallySelectedOption = currentMinute)
+    val amPmState = rememberPickerState(amPm.size, initiallySelectedOption = currentAmPmIndex)
+
+    val YellowShade = Color(0xFFFDE292)
 
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(2.dp))
-
+        Spacer(modifier = Modifier.height(22.dp))
         Row(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Picker(
                 state = hourState,
-                modifier = Modifier.size(70.dp, 70.dp),
+                modifier = Modifier.size(45.dp, 80.dp),
                 contentDescription = "Hour Picker"
             ) { index ->
                 Text(
-                    hours[index],
+                    text = hours[index],
                     style = MaterialTheme.typography.display1,
-                    color = Color.White
+                    color = YellowShade,
+                    fontSize = 24.sp
+                )
+            }
+
+            Text(":", fontSize = 12.sp, color = YellowShade, modifier = Modifier.padding(horizontal = 1.dp))
+
+            Picker(
+                state = minuteState,
+                modifier = Modifier.size(45.dp, 80.dp),
+                contentDescription = "Minute Picker"
+            ) { index ->
+                Text(
+                    text = minutes[index],
+                    style = MaterialTheme.typography.display1,
+                    color = YellowShade,
+                    fontSize = 24.sp
                 )
             }
 
             Spacer(modifier = Modifier.width(2.dp))
 
             Picker(
-                state = minuteState,
-                modifier = Modifier.size(70.dp, 70.dp),
-                contentDescription = "Minute Picker"
+                state = amPmState,
+                modifier = Modifier.size(45.dp, 80.dp),
+                contentDescription = "AM/PM Picker"
             ) { index ->
                 Text(
-                    minutes[index],
+                    text = amPm[index],
                     style = MaterialTheme.typography.display1,
-                    color = Color.White
+                    color = YellowShade,
+                    fontSize = 22.sp
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Button(
             onClick = {
-                val selectedHour = hourState.selectedOption
-                val selectedMinute = minuteState.selectedOption
-                onTimeSelected(selectedHour, selectedMinute)
+                val selectedHour = hours[hourState.selectedOption].toInt()
+                val selectedMinute = minutes[minuteState.selectedOption].toInt()
+                val selectedAmPm = amPm[amPmState.selectedOption]
+                onTimeSelected(selectedHour, selectedMinute, selectedAmPm)
             },
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(50),
             colors = ButtonDefaults.buttonColors(
-                backgroundColor = Color.DarkGray,
-                contentColor = Color.White
+                backgroundColor = Color.White,
+                contentColor = Color.Black
             ),
-            modifier = Modifier
-                .width(90.dp)
-                .height(35.dp)
+            modifier = Modifier.size(40.dp)
         ) {
-            Text(
-                text = "Confirm Alarm",
-                fontSize = 12.sp,
-                style = TextStyle(lineHeight = 14.sp),
-                color = Color.White
+            Icon(
+                imageVector = androidx.compose.material.icons.Icons.Default.Check,
+                contentDescription = "Confirm",
+                tint = Color.Black
             )
         }
     }
@@ -187,7 +239,7 @@ fun TimePickerScreen(onTimeSelected: (Int, Int) -> Unit) {
 
 
 
-private fun setAlarm(context: Context, hour: Int, minute: Int) {
+private fun setAlarm(context: Context, hour: Int, minute: Int, amPm: String) {
     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
@@ -197,13 +249,21 @@ private fun setAlarm(context: Context, hour: Int, minute: Int) {
         }
     }
 
+    val hour24 = if (amPm == "PM" && hour != 12) {
+        hour + 12
+    } else if (amPm == "AM" && hour == 12) {
+        0
+    } else {
+        hour
+    }
+
     val intent = Intent(context, AlarmReceiver::class.java)
     val pendingIntent = PendingIntent.getBroadcast(
         context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
 
     val calendar = Calendar.getInstance().apply {
-        set(Calendar.HOUR_OF_DAY, hour)
+        set(Calendar.HOUR_OF_DAY, hour24)
         set(Calendar.MINUTE, minute)
         set(Calendar.SECOND, 0)
 
@@ -214,6 +274,7 @@ private fun setAlarm(context: Context, hour: Int, minute: Int) {
 
     alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
 }
+
 
 
 fun requestExactAlarmPermission(context: Context) {
