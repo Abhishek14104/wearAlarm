@@ -237,8 +237,6 @@ fun TimePickerScreen(onTimeSelected: (Int, Int, String) -> Unit) {
     }
 }
 
-
-
 private fun setAlarm(context: Context, hour: Int, minute: Int, amPm: String) {
     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
@@ -303,5 +301,4 @@ private fun cancelAlarm(context: Context) {
         }
     }
 }
-
 
