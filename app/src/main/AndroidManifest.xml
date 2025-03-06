@@ -1,46 +1,58 @@
-<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-feature android:name="android.hardware.type.watch" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.SET_ALARM" />
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
 
     <application
-        android:name=".MyApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.DeviceDefault"
-        > <!-- ✅ Use Wear OS Dark Theme -->
+        android:theme="@android:style/Theme.DeviceDefault">
 
+        <!-- Alarm Receiver -->
         <receiver
             android:name=".presentation.AlarmReceiver"
             android:exported="true"
             android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+            </intent-filter>
         </receiver>
 
-        <uses-library
-            android:name="com.google.android.wearable"
-            android:required="true" />
+        <!-- Alarm Service -->
+        <service
+            android:name=".presentation.AlarmService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="false"/>
 
-        <meta-data
-            android:name="com.google.android.wearable.standalone"
-            android:value="true" />
+        <!-- Alarm Activity -->
+        <activity
+            android:name=".presentation.AlarmActivity"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:launchMode="singleTask"
+            android:taskAffinity="com.example.wearalarm.alarm"
+            android:exported="true"
+            android:theme="@android:style/Theme.DeviceDefault.Dialog.Alert"/>
 
+        <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:taskAffinity=""
-            android:theme="@android:style/Theme.DeviceDefault"
-            >
+            android:theme="@android:style/Theme.DeviceDefault">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    </application>
 
+    </application>
 </manifest>
