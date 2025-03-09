@@ -24,7 +24,6 @@ class AlarmActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Ensure screen turns on and stays on
         window.addFlags(
             WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
                     WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
@@ -40,8 +39,8 @@ class AlarmActivity : ComponentActivity() {
 
     private fun dismissAlarm() {
         val stopServiceIntent = Intent(this, AlarmService::class.java)
-        stopService(stopServiceIntent)  // ✅ Stops the alarm service
-        finish()  // ✅ Closes AlarmActivity
+        stopService(stopServiceIntent)
+        finish()
     }
 }
 

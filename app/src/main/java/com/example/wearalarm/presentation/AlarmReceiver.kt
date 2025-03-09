@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.*
+import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -23,9 +24,9 @@ class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         when (intent?.action) {
             "DISMISS_ALARM" -> {
-                stopAlarm() // Stop ringtone & vibration
+                stopAlarm()
                 val notificationManager = NotificationManagerCompat.from(context)
-                notificationManager.cancel(1) // Dismiss the notification
+                notificationManager.cancel(1)
                 return
             }
         }
@@ -38,7 +39,6 @@ class AlarmReceiver : BroadcastReceiver() {
             context, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // ✅ Create Intent & PendingIntent for Dismiss Button
         val dismissIntent = Intent(context, AlarmReceiver::class.java).apply {
             action = "DISMISS_ALARM"
         }
@@ -46,7 +46,6 @@ class AlarmReceiver : BroadcastReceiver() {
             context, 1, dismissIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // ✅ Build Notification with Dismiss Button
         val channelId = "alarm_channel"
         val notificationBuilder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.splash_icon)
@@ -64,7 +63,6 @@ class AlarmReceiver : BroadcastReceiver() {
 
         val notification = notificationBuilder.build()
 
-        // ✅ Check Notification Permission & Show Notification
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -74,17 +72,37 @@ class AlarmReceiver : BroadcastReceiver() {
 
         NotificationManagerCompat.from(context).notify(1, notification)
 
-        // ✅ Start Vibration & Ringtone
-        vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator?.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 500, 500), 0))
+        //has to use this as the other one was depricated in JAVA
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = context.getSystemService(VibratorManager::class.java)
+            vibratorManager.defaultVibrator
         } else {
-            vibrator?.vibrate(longArrayOf(0, 500, 500), 0)
+            @Suppress("DEPRECATION")
+            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+
+        if (vibrator?.hasVibrator() == true) {
+            Log.d("AlarmReceiver", "Device supports vibration")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val effect = VibrationEffect.createWaveform(longArrayOf(0, 500, 500), 0)
+                vibrator?.vibrate(effect)
+                Log.d("AlarmReceiver", "Vibration started with effect: $effect")
+            } else {
+                vibrator?.vibrate(longArrayOf(0, 500, 500), 0)
+                Log.d("AlarmReceiver", "Vibration started (legacy method)")
+            }
+        } else {
+            Log.d("AlarmReceiver", "Vibration not supported on this device (probably an emulator)")
         }
 
         val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
         ringtone = RingtoneManager.getRingtone(context, alarmUri)
-        ringtone?.let { if (!it.isPlaying) it.play() }
+        ringtone?.let {
+            if (!it.isPlaying) {
+                it.play()
+                Log.d("AlarmReceiver", "Ringtone started")
+            }
+        }
     }
 
     fun stopAlarm() {
@@ -92,5 +110,6 @@ class AlarmReceiver : BroadcastReceiver() {
         vibrator?.cancel()
         ringtone = null
         vibrator = null
+        Log.d("AlarmReceiver", "Alarm stopped")
     }
 }
