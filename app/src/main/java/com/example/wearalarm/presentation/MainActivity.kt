@@ -38,12 +38,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ✅ Request notification permission (Wear OS 4+)
         requestNotificationPermission()
-
-        // ✅ Ensure notification settings are registered
         ensureNotificationSettings()
-
         setContent {
             WearAlarmTheme {
                 WearAlarmApp()
@@ -52,7 +48,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED
             ) {
@@ -174,9 +170,6 @@ fun WearAlarmApp() {
 
 @Composable
 fun TimePickerScreen(onTimeSelected: (Int, Int, String) -> Unit) {
-//    val state = rememberPickerState(24, initiallySelected = 12) // Hours
-//    val minuteState = rememberPickerState(60, initiallySelected = 0) // Minutes
-//    val amPmState = rememberPickerState(2, initiallySelected = 0) // AM/PM
     val hours = (1..12).map { it.toString().padStart(2, '0') }
     val minutes = (0..59).map { it.toString().padStart(2, '0') }
     val amPm = listOf("AM", "PM")
@@ -188,10 +181,14 @@ fun TimePickerScreen(onTimeSelected: (Int, Int, String) -> Unit) {
     val currentAmPmIndex = if (currentHour24 >= 12) 1 else 0
     val currentHour12 = if (currentHour24 % 12 == 0) 12 else currentHour24 % 12
 
-//    val amPmList = listOf("AM", "PM")
     val hourState = rememberPickerState(hours.size, initiallySelectedOption = currentHour12 - 1)
     val minuteState = rememberPickerState(minutes.size, initiallySelectedOption = currentMinute)
-    val amPmState = rememberPickerState(amPm.size, initiallySelectedOption = currentAmPmIndex)
+    val amPmState = rememberPickerState(
+        amPm.size,
+        initiallySelectedOption = currentAmPmIndex,
+        repeatItems = false,
+    )
+
 
     val YellowShade = Color(0xFFFDE292)
 
@@ -200,9 +197,9 @@ fun TimePickerScreen(onTimeSelected: (Int, Int, String) -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Select Time", color = Color.White, fontSize = 18.sp)
+        Text("Select Time", color = Color.White, fontSize = 14.sp)
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(5.dp))
 
         Row(
             horizontalArrangement = Arrangement.Center,
@@ -210,73 +207,71 @@ fun TimePickerScreen(onTimeSelected: (Int, Int, String) -> Unit) {
         ) {
             Picker(
                 state = hourState,
-                modifier = Modifier.size(45.dp, 80.dp),
+                modifier = Modifier.size(45.dp, 75.dp),
                 contentDescription = "Hour Picker"
             ) { index ->
                 Text(
                     text = hours[index],
                     style = MaterialTheme.typography.display1,
                     color = YellowShade,
-                    fontSize = 24.sp
+                    fontSize = if (index == hourState.selectedOption) 25.sp else 20.sp
                 )
             }
 
             Text(
                 ":",
-                fontSize = 12.sp,
+                fontSize = 25.sp,
                 color = YellowShade,
                 modifier = Modifier.padding(horizontal = 1.dp)
             )
 
             Picker(
                 state = minuteState,
-                modifier = Modifier.size(45.dp, 80.dp),
+                modifier = Modifier.size(45.dp, 85.dp),
                 contentDescription = "Minute Picker"
             ) { index ->
                 Text(
                     text = minutes[index],
                     style = MaterialTheme.typography.display1,
                     color = YellowShade,
-                    fontSize = 24.sp
+                    fontSize = if (index == minuteState.selectedOption) 25.sp else 20.sp
                 )
             }
 
-            Spacer(modifier = Modifier.width(2.dp))
-
             Picker(
                 state = amPmState,
-                modifier = Modifier.size(45.dp, 80.dp),
+                modifier = Modifier.size(45.dp, 95.dp),
                 contentDescription = "AM/PM Picker"
             ) { index ->
                 Text(
                     text = amPm[index],
                     style = MaterialTheme.typography.display1,
                     color = YellowShade,
-                    fontSize = 22.sp
+                    fontSize = if (index == amPmState.selectedOption) 23.sp else 18.sp,
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
+        }
+        Spacer(modifier = Modifier.height(5.dp))
 
-            Button(
-                onClick = {
-                    val selectedHour = hours[hourState.selectedOption].toInt()
-                    val selectedMinute = minutes[minuteState.selectedOption].toInt()
-                    val selectedAmPm = amPm[amPmState.selectedOption]
-                    onTimeSelected(selectedHour, selectedMinute, selectedAmPm)
-                },
-                shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = Color.White,
-                    contentColor = Color.Black
-                ),
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    imageVector = androidx.compose.material.icons.Icons.Default.Check,
-                    contentDescription = "Confirm",
-                    tint = Color.Black
-                )
-            }
+        Button(
+            onClick = {
+                val selectedHour = hours[hourState.selectedOption].toInt()
+                val selectedMinute = minutes[minuteState.selectedOption].toInt()
+                val selectedAmPm = amPm[amPmState.selectedOption]
+                onTimeSelected(selectedHour, selectedMinute, selectedAmPm)
+            },
+            shape = RoundedCornerShape(50),
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = Color.White,
+                contentColor = Color.Black
+            ),
+            modifier = Modifier.size(40.dp)
+        ) {
+            Icon(
+                imageVector = androidx.compose.material.icons.Icons.Default.Check,
+                contentDescription = "Confirm",
+                tint = Color.Black
+            )
         }
     }
 }
