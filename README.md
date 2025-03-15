@@ -14,7 +14,7 @@ For detailed documentation, refer to the official project document: [Google Docs
 ## Implementation Details
 
 ### Alarm Scheduling & Storage
-- Uses `AlarmManager` to trigger alarms at the correct time.
+- Uses AlarmManager to trigger alarms at the correct time.
 - Stores alarms locally using SharedPreferences.
 - Future updates may transition to SQLite for better performance.
 
