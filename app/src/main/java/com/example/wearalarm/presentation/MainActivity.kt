@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.example.wearalarm.presentation.AlarmReceiver
 import java.util.Calendar
 import android.os.Build
+import android.util.Log
 import android.widget.Space
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -240,6 +241,8 @@ fun TimePickerScreen(initialAlarm: AlarmModel? = null, onTimeSelected: (Int, Int
     }
 }
 
+
+
 private fun setAlarm(context: Context, hour: Int, minute: Int, amPm: String): Int {
     val alarmId = System.currentTimeMillis().toInt()
     val alarmTime = "%02d:%02d %s".format(hour, minute, amPm)
@@ -252,6 +255,12 @@ private fun setAlarm(context: Context, hour: Int, minute: Int, amPm: String): In
     val pendingIntent = PendingIntent.getBroadcast(
         context, alarmId, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
+    if (pendingIntent == null) {
+        Log.e("AlarmDebug", "PendingIntent creation failed")
+    } else {
+        Log.d("AlarmDebug", "PendingIntent created: ID=$alarmId")
+    }
+
 
     val calendar = Calendar.getInstance().apply {
         set(Calendar.HOUR_OF_DAY, if (amPm == "PM" && hour != 12) hour + 12 else hour)
@@ -261,19 +270,26 @@ private fun setAlarm(context: Context, hour: Int, minute: Int, amPm: String): In
     }
 
     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    Log.d("AlarmDebug", "Setting alarm for: ${calendar.time}")
+
     try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-            Toast.makeText(context, "Enable exact alarms in settings", Toast.LENGTH_LONG).show()
+            Log.e("AlarmDebug", "Exact alarm permission not granted!")
+            Toast.makeText(context, "Go to Settings->Apps & notifications->App info->WearAlarm->Advanced", Toast.LENGTH_LONG).show()
         } else {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+            val alarmInfo = AlarmManager.AlarmClockInfo(calendar.timeInMillis, pendingIntent)
+            alarmManager.setAlarmClock(alarmInfo, pendingIntent)
+            Log.d("AlarmDebug", "Alarm scheduled successfully")
         }
     } catch (e: SecurityException) {
+        Log.e("AlarmDebug", "SecurityException: ${e.message}")
         Toast.makeText(context, "Permission required for exact alarms", Toast.LENGTH_LONG).show()
     }
 
     AlarmStorage.saveAlarm(context, alarmId, hour, minute, amPm)
     return alarmId
 }
+
 
 
 

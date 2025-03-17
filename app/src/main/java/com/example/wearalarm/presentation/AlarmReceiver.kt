@@ -21,9 +21,31 @@ class AlarmReceiver : BroadcastReceiver() {
         var vibrator: Vibrator? = null
     }
 
+    private fun createNotificationChannel(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "alarm_channel",
+                "Alarm Notifications",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Alarm notifications for the Wear OS alarm app"
+                enableVibration(true)
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+            }
+
+            val notificationManager = context.getSystemService(NotificationManager::class.java)
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+
     override fun onReceive(context: Context, intent: Intent?) {
+        createNotificationChannel(context)
+
         val alarmId = intent?.getIntExtra("alarm_id", -1) ?: -1
         val alarmTime = intent?.getStringExtra("alarm_time") ?: "Unknown Time"
+
+        Log.d("AlarmDebug", "AlarmReceiver triggered: ID=$alarmId at $alarmTime")
 
         if (intent?.action == "DISMISS_ALARM") {
             stopAlarm()
@@ -57,8 +79,11 @@ class AlarmReceiver : BroadcastReceiver() {
         ) {
             return
         }
+
         NotificationManagerCompat.from(context).notify(alarmId, notification)
+        Log.d("AlarmDebug", "Notification sent for alarm ID=$alarmId")
     }
+
 
     private fun playAlarmSoundAndVibrate(context: Context) {
         try {
