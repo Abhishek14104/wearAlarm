@@ -3,7 +3,8 @@
 ## Introduction
 This project is part of the **GSoC 2025 Qualification Task** for integrating a Wear OS alarm system with the [Ultimate Alarm Clock](https://github.com/CCExtractor/ultimate_alarm_clock). It serves as a foundation for a future **companion app**, focusing on alarm management within Wear OS.
 
-For detailed documentation, refer to the official project document: [Google Docs](https://docs.google.com/document/d/1taKun29BOqkpHbgkU0SdB0K-2pjz-hcU8WgJIgWeynM/edit?tab=t.0).
+For detailed documentation, refer to the official project document: [Google Docs](https://docs.google.com/document/d/1taKun29BOqkpHbgkU0SdB0K-2pjz-hcU8WgJIgWeynM/edit?tab=t.0), or watch the [Demo Video](https://youtu.be/hqj3ZzVvHEM?si=Tue3dLpux-eK1gLq).
+
 ## Features
 - Set, Edit, and Dismiss Alarms directly from the watch.
 - Wear OS notifications with vibration and ringtone.
