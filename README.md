@@ -30,6 +30,7 @@ Watch the [Demo Video](https://youtu.be/hqj3ZzVvHEM?si=Tue3dLpux-eK1gLq).
 
 
 ## Cons
-- PrefrenceShare (not a real database like SQLite) - used for multiple alarms and is easy to implement
+- SharedPreferences (not a real database like SQLite) - used for multiple alarms and is easy to implement
+- UI doesn't feel too good (just made for functionalities, as there is always scope for better)
 
 
